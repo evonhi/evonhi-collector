@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -102,11 +103,12 @@ func listServiceAccounts(ctx context.Context, cs *kubernetes.Clientset) ([]model
 				refs = append(refs, s.Name)
 			}
 			out = append(out, model.ServiceAccount{
-				Namespace:   sa.Namespace,
-				Name:        sa.Name,
-				Labels:      sa.Labels,
-				Annotations: sa.Annotations,
-				Secrets:     refs,
+				Namespace:      sa.Namespace,
+				Name:           sa.Name,
+				Labels:         sa.Labels,
+				Annotations:    sa.Annotations,
+				Secrets:        refs,
+				AutomountToken: sa.AutomountServiceAccountToken,
 			})
 		}
 		if list.Continue == "" {
@@ -270,6 +272,8 @@ func buildWorkload(namespace, name, kind string, replicas int32, podSpec corev1.
 		Criticality:    crit,
 		TrafficRPS:     0,
 		Labels:         labels,
+		AutomountToken: podSpec.AutomountServiceAccountToken,
+		MountedSecrets: readableSecrets(podSpec),
 	}
 }
 
@@ -439,6 +443,13 @@ func secretsFromMounts(mountIdx map[string][]model.SecretMount) []model.SecretRe
 			MountedBy: mounts,
 		})
 	}
+	// Map iteration order is random; a stable order keeps payload digests (and snapshots) stable.
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Namespace != out[j].Namespace {
+			return out[i].Namespace < out[j].Namespace
+		}
+		return out[i].Name < out[j].Name
+	})
 	return out
 }
 
@@ -453,41 +464,80 @@ func splitKey(k string) (string, string, bool) {
 
 func buildSecretMountIndex(pods []corev1.Pod) map[string][]model.SecretMount {
 	idx := map[string][]model.SecretMount{}
-	add := func(ns, secretName string, m model.SecretMount) {
-		if secretName == "" {
-			return
-		}
-		key := ns + "/" + secretName
-		idx[key] = append(idx[key], m)
-	}
 	for _, p := range pods {
 		sa := p.Spec.ServiceAccountName
 		if sa == "" {
 			sa = "default"
 		}
-		mount := model.SecretMount{Namespace: p.Namespace, Workload: getWorkloadName(p), ServiceAccount: sa}
-		for _, v := range p.Spec.Volumes {
-			if v.Secret != nil {
-				add(p.Namespace, v.Secret.SecretName, mount)
+		base := model.SecretMount{Namespace: p.Namespace, Workload: getWorkloadName(p), ServiceAccount: sa}
+		add := func(secretName, via string) {
+			if secretName == "" {
+				return
 			}
+			m := base
+			m.Via = via
+			key := p.Namespace + "/" + secretName
+			idx[key] = append(idx[key], m)
+		}
+		for _, ref := range secretRefs(p.Spec) {
+			add(ref.name, ref.via)
 		}
 		for _, ips := range p.Spec.ImagePullSecrets {
-			add(p.Namespace, ips.Name, mount)
+			add(ips.Name, "imagePullSecret")
 		}
-		for _, c := range p.Spec.Containers {
-			for _, ef := range c.EnvFrom {
-				if ef.SecretRef != nil {
-					add(p.Namespace, ef.SecretRef.Name, mount)
-				}
-			}
-			for _, e := range c.Env {
-				if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
-					add(p.Namespace, e.ValueFrom.SecretKeyRef.Name, mount)
+	}
+	return idx
+}
+
+type secretRef struct {
+	name string
+	via  string
+}
+
+// secretRefs lists the secrets a pod spec exposes to its containers: secret and projected
+// volumes, env valueFrom.secretKeyRef and envFrom.secretRef, in regular and init containers.
+func secretRefs(spec corev1.PodSpec) []secretRef {
+	out := []secretRef{}
+	for _, v := range spec.Volumes {
+		if v.Secret != nil {
+			out = append(out, secretRef{v.Secret.SecretName, "volume"})
+		}
+		if v.Projected != nil {
+			for _, src := range v.Projected.Sources {
+				if src.Secret != nil {
+					out = append(out, secretRef{src.Secret.Name, "volume"})
 				}
 			}
 		}
 	}
-	return idx
+	containers := append(append([]corev1.Container{}, spec.InitContainers...), spec.Containers...)
+	for _, c := range containers {
+		for _, ef := range c.EnvFrom {
+			if ef.SecretRef != nil {
+				out = append(out, secretRef{ef.SecretRef.Name, "envFrom"})
+			}
+		}
+		for _, e := range c.Env {
+			if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
+				out = append(out, secretRef{e.ValueFrom.SecretKeyRef.Name, "env"})
+			}
+		}
+	}
+	return out
+}
+
+// readableSecrets is the sorted, de-duplicated set of secret names a container can read.
+func readableSecrets(spec corev1.PodSpec) []string {
+	seen := map[string]bool{}
+	out := []string{}
+	for _, ref := range secretRefs(spec) {
+		if ref.name != "" && !seen[ref.name] {
+			seen[ref.name] = true
+			out = append(out, ref.name)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func convertRules(in []rbacv1.PolicyRule) []model.PolicyRule {
