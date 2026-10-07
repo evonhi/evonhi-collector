@@ -116,7 +116,7 @@ func listServiceAccounts(ctx context.Context, cs *kubernetes.Clientset) ([]model
 				Namespace:      sa.Namespace,
 				Name:           sa.Name,
 				Labels:         sa.Labels,
-				Annotations:    sa.Annotations,
+				Annotations:    sanitizeAnnotations(sa.Annotations),
 				Secrets:        refs,
 				AutomountToken: sa.AutomountServiceAccountToken,
 			})
@@ -413,7 +413,7 @@ func listSecrets(ctx context.Context, cs *kubernetes.Clientset, pods []corev1.Po
 				Name:        s.Name,
 				Type:        string(s.Type),
 				Labels:      s.Labels,
-				Annotations: s.Annotations,
+				Annotations: secretAnnotations(s.Annotations),
 				MountedBy:   mounts,
 			})
 		}
@@ -678,6 +678,44 @@ func derivePermissions(
 		}
 	}
 
+	return out
+}
+
+// lastAppliedAnnotation holds the full object as last applied by kubectl — for a Secret that
+// includes its data. It is never forwarded.
+const lastAppliedAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
+
+// secretAnnotationAllowlist are the only Secret annotations forwarded: they link a token secret
+// to its service account and carry EvoNHI's own hints. Everything else may embed secret material.
+var secretAnnotationAllowlist = map[string]bool{
+	"kubernetes.io/service-account.name": true,
+	"kubernetes.io/service-account.uid":  true,
+}
+
+func sanitizeAnnotations(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for k, v := range in {
+		if k == lastAppliedAnnotation {
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
+func secretAnnotations(in map[string]string) map[string]string {
+	out := map[string]string{}
+	for k, v := range in {
+		if secretAnnotationAllowlist[k] || strings.HasPrefix(k, "evonhi.io/") {
+			out[k] = v
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
 	return out
 }
 
