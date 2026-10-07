@@ -25,7 +25,7 @@ const (
 // It never reads Secret.Data — only metadata is captured.
 // If enableSecretReading is false (Zero-Trust default), the Secrets API is NOT called;
 // SecretRef entries are reconstructed from Pod mount references instead.
-func Collect(ctx context.Context, cs *kubernetes.Clientset, clusterID string, enableSecretReading bool) (*model.ClusterStatePayload, error) {
+func Collect(ctx context.Context, cs kubernetes.Interface, clusterID string, enableSecretReading bool) (*model.ClusterStatePayload, error) {
 	payload := &model.ClusterStatePayload{
 		SchemaVersion: model.SchemaVersion,
 		ClusterID:     clusterID,
@@ -99,7 +99,7 @@ func Collect(ctx context.Context, cs *kubernetes.Clientset, clusterID string, en
 	return payload, nil
 }
 
-func listServiceAccounts(ctx context.Context, cs *kubernetes.Clientset) ([]model.ServiceAccount, error) {
+func listServiceAccounts(ctx context.Context, cs kubernetes.Interface) ([]model.ServiceAccount, error) {
 	out := []model.ServiceAccount{}
 	opts := metav1.ListOptions{Limit: defaultPageSize}
 	for {
@@ -129,7 +129,7 @@ func listServiceAccounts(ctx context.Context, cs *kubernetes.Clientset) ([]model
 	return out, nil
 }
 
-func listRoles(ctx context.Context, cs *kubernetes.Clientset) ([]model.Role, error) {
+func listRoles(ctx context.Context, cs kubernetes.Interface) ([]model.Role, error) {
 	out := []model.Role{}
 	opts := metav1.ListOptions{Limit: defaultPageSize}
 	for {
@@ -152,7 +152,7 @@ func listRoles(ctx context.Context, cs *kubernetes.Clientset) ([]model.Role, err
 	return out, nil
 }
 
-func listClusterRoles(ctx context.Context, cs *kubernetes.Clientset) ([]model.ClusterRole, error) {
+func listClusterRoles(ctx context.Context, cs kubernetes.Interface) ([]model.ClusterRole, error) {
 	out := []model.ClusterRole{}
 	opts := metav1.ListOptions{Limit: defaultPageSize}
 	for {
@@ -174,7 +174,7 @@ func listClusterRoles(ctx context.Context, cs *kubernetes.Clientset) ([]model.Cl
 	return out, nil
 }
 
-func listRoleBindings(ctx context.Context, cs *kubernetes.Clientset) ([]model.RoleBinding, error) {
+func listRoleBindings(ctx context.Context, cs kubernetes.Interface) ([]model.RoleBinding, error) {
 	out := []model.RoleBinding{}
 	opts := metav1.ListOptions{Limit: defaultPageSize}
 	for {
@@ -198,7 +198,7 @@ func listRoleBindings(ctx context.Context, cs *kubernetes.Clientset) ([]model.Ro
 	return out, nil
 }
 
-func listClusterRoleBindings(ctx context.Context, cs *kubernetes.Clientset) ([]model.ClusterRoleBinding, error) {
+func listClusterRoleBindings(ctx context.Context, cs kubernetes.Interface) ([]model.ClusterRoleBinding, error) {
 	out := []model.ClusterRoleBinding{}
 	opts := metav1.ListOptions{Limit: defaultPageSize}
 	for {
@@ -221,7 +221,7 @@ func listClusterRoleBindings(ctx context.Context, cs *kubernetes.Clientset) ([]m
 	return out, nil
 }
 
-func listPods(ctx context.Context, cs *kubernetes.Clientset) ([]corev1.Pod, error) {
+func listPods(ctx context.Context, cs kubernetes.Interface) ([]corev1.Pod, error) {
 	out := []corev1.Pod{}
 	opts := metav1.ListOptions{Limit: defaultPageSize}
 	for {
@@ -391,7 +391,7 @@ func listWorkloads(ctx context.Context, cs kubernetes.Interface) ([]model.Worklo
 
 // listSecrets enumerates Secrets capturing ONLY metadata. Secret.Data is never read.
 // mounted_by is derived from the pod list.
-func listSecrets(ctx context.Context, cs *kubernetes.Clientset, pods []corev1.Pod) ([]model.SecretRef, error) {
+func listSecrets(ctx context.Context, cs kubernetes.Interface, pods []corev1.Pod) ([]model.SecretRef, error) {
 	mountIdx := buildSecretMountIndex(pods)
 	out := []model.SecretRef{}
 	opts := metav1.ListOptions{Limit: defaultPageSize}
