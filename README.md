@@ -14,7 +14,7 @@ The **EvoNHI Collector** is a read-only, lightweight agent designed to securely 
 
 ## What it sends (schema 1.1)
 
-Contract: [`evonhi-core/contracts/cluster-snapshot.v1.schema.json`](https://github.com/gnazinu/evonhi-core/blob/main/contracts/cluster-snapshot.v1.schema.json),
+Contract: [`evonhi-core/contracts/cluster-snapshot.v1.schema.json`](https://github.com/evonhi/evonhi-core/blob/main/contracts/cluster-snapshot.v1.schema.json),
 frozen by `internal/k8s/testdata/snapshot.golden.json` and validated against the published schema in CI.
 
 * RBAC: service accounts (with `automountServiceAccountToken`), roles, cluster roles and their bindings.
@@ -41,4 +41,4 @@ Currently, the agent authenticates using your local kubeconfig to test extractio
 go run cmd/agent/main.go
 
 Part of the EvoNHI ecosystem — the payload is consumed by the private platform and translated by the open
-[`evonhi-core`](https://github.com/gnazinu/evonhi-core) engine.
+[`evonhi-core`](https://github.com/evonhi/evonhi-core) engine.

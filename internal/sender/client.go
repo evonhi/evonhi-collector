@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tu-usuario/evonhi-collector/internal/sign"
+	"github.com/evonhi/evonhi-collector/internal/sign"
 )
 
 const (

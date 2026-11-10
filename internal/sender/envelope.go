@@ -3,7 +3,7 @@ package sender
 import (
 	"time"
 
-	"github.com/tu-usuario/evonhi-collector/internal/model"
+	"github.com/evonhi/evonhi-collector/internal/model"
 )
 
 // Envelope conforms to evo_saas TelemetrySnapshotCreate

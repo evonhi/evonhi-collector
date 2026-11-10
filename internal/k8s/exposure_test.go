@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tu-usuario/evonhi-collector/internal/model"
+	"github.com/evonhi/evonhi-collector/internal/model"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

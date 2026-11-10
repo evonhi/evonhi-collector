@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/tu-usuario/evonhi-collector/internal/config"
-	"github.com/tu-usuario/evonhi-collector/internal/k8s"
-	"github.com/tu-usuario/evonhi-collector/internal/sender"
+	"github.com/evonhi/evonhi-collector/internal/config"
+	"github.com/evonhi/evonhi-collector/internal/k8s"
+	"github.com/evonhi/evonhi-collector/internal/sender"
 )
 
 func main() {

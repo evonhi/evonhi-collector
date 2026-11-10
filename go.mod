@@ -1,4 +1,4 @@
-module github.com/tu-usuario/evonhi-collector
+module github.com/evonhi/evonhi-collector
 
 go 1.26.0
 
