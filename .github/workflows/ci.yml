@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
 
       - name: go vet
@@ -28,7 +28,8 @@ jobs:
         run: test -z "$(gofmt -l .)" || { echo 'Run gofmt -w .'; gofmt -l .; exit 1; }
 
       - name: Lint (golangci-lint)
-        uses: golangci/golangci-lint-action@v6
+        # v6 pins golangci-lint v1.x, which is built with Go 1.24 and refuses Go 1.26 modules.
+        uses: golangci/golangci-lint-action@v8
         with:
           version: latest
 
@@ -87,7 +88,7 @@ jobs:
         run: docker build -t "$IMAGE:${{ github.sha }}" .
 
       - name: Scan image (Trivy)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ${{ env.IMAGE }}:${{ github.sha }}
           severity: HIGH,CRITICAL

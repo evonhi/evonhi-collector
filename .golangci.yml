@@ -1,0 +1,7 @@
+version: "2"
+linters:
+  exclusions:
+    presets:
+      # Unchecked Close()/Print errors on best-effort paths (deferred body close, logging).
+      - std-error-handling
+      - common-false-positives

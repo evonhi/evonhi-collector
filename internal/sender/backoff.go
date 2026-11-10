@@ -40,7 +40,8 @@ func (b *Backoff) NextDelay() (time.Duration, bool) {
 		return 0, false
 	}
 	d := b.current
-	jitter := time.Duration(float64(d) * b.JitterFrac * (2*rand.Float64() - 1))
+	// Retry jitter only spreads load; it is not security sensitive.
+	jitter := time.Duration(float64(d) * b.JitterFrac * (2*rand.Float64() - 1)) // #nosec G404
 	d += jitter
 	if d < 0 {
 		d = b.Initial
