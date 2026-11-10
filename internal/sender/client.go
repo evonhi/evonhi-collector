@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	headerToken     = "X-Connector-Token"
+	headerToken     = "X-Connector-Token" // #nosec G101 -- header name, not a credential
 	headerSignature = "X-Evonhi-Signature"
 	headerTimestamp = "X-Evonhi-Timestamp"
 	userAgent       = "evonhi-collector/0.1"
