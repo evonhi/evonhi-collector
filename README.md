@@ -30,7 +30,7 @@ Required RBAC (`deploy/helm`): `get`/`list` on exactly the resources above, enfo
 ## Development
 
 ### Prerequisites
-* Go 1.25+
+* Go 1.26+
 * A running Kubernetes cluster (e.g., Minikube, Kind)
 * Valid `~/.kube/config`
 
