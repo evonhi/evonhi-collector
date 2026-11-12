@@ -32,7 +32,7 @@ func Load() (*Config, error) {
 	flag.StringVar(&c.Token, "token", os.Getenv("EVONHI_TOKEN"), "connector token (sent as X-Connector-Token)")
 	flag.StringVar(&c.HMACKey, "hmac-key", os.Getenv("EVONHI_HMAC_KEY"), "HMAC-SHA256 signing key (required when sending; off only in --dry-run)")
 	flag.BoolVar(&c.Pretty, "pretty", false, "pretty-print JSON when dry-run")
-	flag.BoolVar(&c.DryRun, "dry-run", false, "print payload to stdout instead of sending")
+	flag.BoolVar(&c.DryRun, "dry-run", boolenv("EVONHI_DRY_RUN", false), "print payload to stdout instead of sending")
 	flag.DurationVar(&c.CollectTimeout, "collect-timeout", durenv("EVONHI_COLLECT_TIMEOUT", 2*time.Minute), "collection timeout")
 	flag.DurationVar(&c.SendTimeout, "send-timeout", durenv("EVONHI_SEND_TIMEOUT", 30*time.Second), "per-request HTTP timeout")
 	flag.DurationVar(&c.MaxElapsed, "max-elapsed", durenv("EVONHI_MAX_ELAPSED", 10*time.Minute), "max total time for retries")

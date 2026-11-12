@@ -68,6 +68,8 @@ spec:
                       key: hmac-key
                 - name: EVONHI_ENABLE_SECRET_READING
                   value: {{ .Values.rbac.allowSecretReading | quote }}
+                - name: EVONHI_DRY_RUN
+                  value: {{ .Values.dryRun | quote }}
                 {{- if .Values.proxy.http }}
                 - name: HTTP_PROXY
                   value: {{ .Values.proxy.http | quote }}

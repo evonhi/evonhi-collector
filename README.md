@@ -27,6 +27,12 @@ frozen by `internal/k8s/testdata/snapshot.golden.json` and validated against the
 Required RBAC (`deploy/helm`): `get`/`list` on exactly the resources above, enforced by
 `TestClusterRoleCoversEverythingTheAgentLists`.
 
+## Audit before you connect
+
+Install the chart with `--set dryRun=true` and the agent prints the payload to the pod log instead of sending it:
+you can review exactly what would leave the cluster. CI runs the chart this way on a real cluster (kind) and
+analyzes the output with `evonhi-core` (`test/e2e`).
+
 ## Development
 
 ### Prerequisites
