@@ -13,7 +13,10 @@ from evonhi_core.planning import assess_risk
 from evonhi_core.providers.kubernetes.provider import KubernetesProvider
 from evonhi_core.providers.kubernetes.snapshot import cluster_model_from_snapshot
 
-payload = json.load(open(sys.argv[1]))
+envelope = json.load(open(sys.argv[1]))
+# Audit mode prints what would be sent: the envelope the control plane ingests, payload inside.
+assert envelope["source_kind"] == "connector" and envelope["summary"]["schema_version"] == "1.1", envelope.get("summary")
+payload = envelope["payload"]
 jsonschema.validate(payload, json.load(open(sys.argv[2])))
 
 workloads = {(w["namespace"], w["name"]): w for w in payload["workloads"]}
