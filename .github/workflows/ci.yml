@@ -18,7 +18,9 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.26"
+          # Always the newest 1.26 patch: govulncheck fails on standard-library advisories fixed upstream.
+          go-version: "1.26.x"
+          check-latest: true
           cache: true
 
       - name: go vet
