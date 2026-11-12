@@ -59,7 +59,7 @@ jobs:
           python-version: "3.12"
       - name: Validate the golden payload against the published contract and adapter
         env:
-          CORE_REF: v0.2.1
+          CORE_REF: v0.2.2
         run: |
           pip install jsonschema "evonhi-core @ git+https://github.com/${{ github.repository_owner }}/evonhi-core.git@${CORE_REF}"
           curl -fsSL "https://raw.githubusercontent.com/${{ github.repository_owner }}/evonhi-core/${CORE_REF}/contracts/cluster-snapshot.v1.schema.json" -o schema.json
@@ -71,6 +71,56 @@ jobs:
           model = cluster_model_from_snapshot(payload)
           print(f"contract OK: {len(model.workloads)} workloads, {len(model.role_bindings)} bindings")
           PY
+
+  e2e:
+    name: End to end on kind (in-cluster run against a real API server)
+    runs-on: ubuntu-latest
+    env:
+      CORE_REF: v0.2.2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create a kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: e2e
+
+      - name: Build the image and load it into the cluster
+        run: |
+          docker build -t evonhi-collector:e2e .
+          kind load docker-image evonhi-collector:e2e --name e2e
+
+      - name: Deploy the fixtures
+        run: |
+          kubectl apply -f test/e2e/fixtures.yaml
+          kubectl -n shop create secret generic db-creds --from-literal=password=not-a-real-secret
+          kubectl -n shop rollout status deployment/web deployment/db-worker --timeout=180s
+
+      - name: Install the chart in audit (dry-run) mode
+        run: |
+          helm install collector deploy/helm/evo-collector --namespace evonhi --create-namespace \
+            --set image.repository=evonhi-collector --set image.tag=e2e --set image.pullPolicy=Never \
+            --set clusterId=kind-e2e --set dryRun=true --set token.value=unused --set hmacKey=unused
+
+      - name: Run the agent once with the chart's own ServiceAccount and RBAC
+        run: |
+          kubectl -n evonhi create job e2e --from=cronjob/collector-evo-collector
+          if ! kubectl -n evonhi wait --for=condition=complete job/e2e --timeout=180s; then
+            kubectl -n evonhi describe job/e2e
+            kubectl -n evonhi logs job/e2e --tail=50
+            exit 1
+          fi
+          kubectl -n evonhi logs job/e2e > payload.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate the payload and analyze it with evonhi-core
+        run: |
+          pip install jsonschema "evonhi-core @ git+https://github.com/${{ github.repository_owner }}/evonhi-core.git@${CORE_REF}"
+          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository_owner }}/evonhi-core/${CORE_REF}/contracts/cluster-snapshot.v1.schema.json" -o schema.json
+          python test/e2e/check.py payload.json schema.json
 
   image:
     name: Container image (build • scan • push • sign)
