@@ -22,6 +22,10 @@ token:
 # verifies the X-Evonhi-Signature header against this shared secret per environment.
 hmacKey: ""
 
+# Audit mode: print the payload to the pod log instead of sending it, so you can review exactly
+# what would leave the cluster before connecting the agent to the control plane.
+dryRun: false
+
 rbac:
   # Zero-Trust default: the agent does NOT call the Secrets API.
   # When false, SecretRef entries are inferred from Pod mount references
